@@ -1,0 +1,150 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task List</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .navbar {
+            padding: 8px 15px;
+        }
+
+        .welcome-text {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .search-bar {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .search-bar input {
+            padding-left: 40px;
+        }
+
+        .search-icon {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow">
+        <div class="container">
+            <span class="navbar-text text-light welcome-text">👋 Welcome, Emmanuelle Santos!!</span>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4 text-primary">📋 Task List</h1>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="search-bar">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="search-input" class="form-control form-control-lg" placeholder="Search tasks...">
+            </div>
+            <a href="{% url 'task_create' %}" class="btn btn-success shadow">+ Create New Task</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover text-center shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="task-table-body">
+                    {% for task in tasks %}
+                    <tr class="align-middle">
+                        <td>{{ task.title }}</td>
+                        <td>{{ task.description|default:"No description" }}</td>
+                        <td>{{ task.due_date }}</td>
+                        <td>
+                            <span class="badge {% if task.status == 'Completed' %} bg-success {% elif task.status == 'Overdue' %} bg-danger {% else %} bg-warning {% endif %} px-3 py-2">
+                                {{ task.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'task_update' task.id %}" class="btn btn-warning btn-sm">✏️ Edit</a>
+                            <a href="{% url 'task_delete' task.id %}" class="btn btn-danger btn-sm">❌ Delete</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No tasks found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            function searchTasks() {
+                let query = $('#search-input').val();
+
+                $.ajax({
+                    url: "{% url 'task_search' %}",
+                    type: "GET",
+                    data: {'q': query},
+                    success: function (data) {
+                        let taskTable = $('#task-table-body');
+                        taskTable.empty();
+
+                        if (data.tasks.length > 0) {
+                            data.tasks.forEach(task => {
+                                taskTable.append(`
+                                    <tr class="align-middle">
+                                        <td>${task.title}</td>
+                                        <td>${task.description || "No description"}</td>
+                                        <td>${task.due_date}</td>
+                                        <td>
+                                            <span class="badge ${getBadgeClass(task.status)}">${task.status}</span>
+                                        </td>
+                                        <td>
+                                            <a href="/${task.id}/edit/" class="btn btn-warning btn-sm">✏️ Edit</a>
+                                            <a href="/${task.id}/delete/" class="btn btn-danger btn-sm">❌ Delete</a>
+                                        </td>
+                                    </tr>
+                                `);
+                            });
+                        } else {
+                            taskTable.append(`<tr><td colspan="5" class="text-center text-muted">No tasks found.</td></tr>`);
+                        }
+                    }
+                });
+            }
+
+            $('#search-input').on('keyup', searchTasks);
+
+            function getBadgeClass(status) {
+                if (status === 'Completed') return 'bg-success';
+                if (status === 'Overdue') return 'bg-danger';
+                return 'bg-warning';
+            }
+        });
+    </script>
+</body>
+</html>
